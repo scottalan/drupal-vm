@@ -77,12 +77,13 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       rsync__args: ["--verbose", "--archive", "--no-owner", "--no-group", "--chmod=Dug=rwx,Do=rx,Fug=rw,Fo=r", "-z"], # "--chmod=Dug=rwx,Do=rx,Fug=rw,Fo=r" / "--delete"
       id: synced_folder['id'],
       create: synced_folder.include?('create') ? synced_folder['create'] : false,
-      if synced_folder['type'] == 'rsync';
-        owner: 'vagrant',
-        group: 'www-data'
-        mount_options: synced_folder.include?('mount_options') ? synced_folder['mount_options'] : []
-      end
     }
+
+    if synced_folder['type'] == 'rsync';
+      options.owner = 'vagrant'
+      options.group = 'www-data'
+      options.mount_options = synced_folder.include?('mount_options') ? synced_folder['mount_options'] : []
+    end
 
     if synced_folder.include?('options_override');
       options = options.merge(synced_folder['options_override'])
