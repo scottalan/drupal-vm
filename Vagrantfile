@@ -2,6 +2,9 @@
 # vi: set ft=ruby :
 VAGRANTFILE_API_VERSION = "2"
 
+#   vagrant plugin install vagrant-hostsupdater && vagrant plugin install vagrant-vbguest
+#   vagrant plugin install vagrant-vbguest # if you want to ensure guest addition parity
+
 # Cross-platform way of finding an executable in the $PATH.
 def which(cmd)
   exts = ENV['PATHEXT'] ? ENV['PATHEXT'].split(';') : ['']
@@ -61,14 +64,35 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   for synced_folder in vconfig['vagrant_synced_folders'];
-    config.vm.synced_folder synced_folder['local_path'], synced_folder['destination'],
-      type: synced_folder['type'],
-      rsync__auto: "true",
-      rsync__exclude: synced_folder['excluded_paths'],
-      rsync__args: ["--verbose", "--archive", "--delete", "-z", "--chmod=ugo=rwX"],
-      id: synced_folder['id'],
-      create: synced_folder.include?('create') ? synced_folder['create'] : false,
-      mount_options: synced_folder.include?('mount_options') ? synced_folder['mount_options'] : []
+    if synced_folder['type'] == 'nfs'
+      config.vm.synced_folder synced_folder['local_path'], synced_folder['destination'],
+        type: synced_folder['type'],
+        rsync__auto: "false",
+        rsync__exclude: synced_folder['excluded_paths'],
+        rsync__args: ["--verbose", "--archive", "--no-owner", "--no-group", "--chmod=Dug=rwx,Do=rx,Fug=rw,Fo=r", "-z"], # "--chmod=Dug=rwx,Do=rx,Fug=rw,Fo=r" / "--delete"
+        id: synced_folder['id'],
+        create: synced_folder.include?('create') ? synced_folder['create'] : false,
+        mount_options: synced_folder.include?('mount_options') ? synced_folder['mount_options'] : []
+    else
+      config.vm.synced_folder synced_folder['local_path'], synced_folder['destination'],
+        type: synced_folder['type'],
+        rsync__auto: "false",
+        rsync__exclude: synced_folder['excluded_paths'],
+        rsync__args: ["--verbose", "--archive", "--delete", "--perms", "-z"], # "--chmod=Dug=rwx,Do=rx,Fug=rw,Fo=r"
+        id: synced_folder['id'],
+        create: synced_folder.include?('create') ? synced_folder['create'] : false,
+        owner: 'vagrant',
+        group: 'www-data'
+#        mount_options: synced_folder.include?('mount_options') ? synced_folder['mount_options'] : []
+    end
+  end
+
+  # Configure the window for gatling to coalesce writes.
+  if Vagrant.has_plugin?("vagrant-gatling-rsync")
+    config.gatling.latency = 2
+    config.gatling.time_format = "%H:%M:%S"
+    # Automatically sync when machines with rsync folders come up.
+    config.gatling.rsync_on_startup = false
   end
 
   # Provision using Ansible provisioner if Ansible is installed on host.
@@ -84,6 +108,16 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       sh.args = "/provisioning/playbook.yml"
     end
   end
+
+  # Setup selenium testing.
+#  config.vm.provision "shell" do |test|
+#    test.path = "#{dir}/provisioning/selenium/testing.sh"
+#  end
+
+#  # Setup vagrant user bash.
+#  config.vm.provision "shell" do |custom|
+#    custom.path = "#{dir}/provisioning/user/bash.sh"
+#  end
 
   # VMware Fusion.
   config.vm.provider :vmware_fusion do |v, override|
