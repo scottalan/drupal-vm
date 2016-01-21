@@ -26,6 +26,8 @@ end
 vconfig = YAML::load_file("#{dir}/config.yml")
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+  # Networking configuration.
   config.vm.hostname = vconfig['vagrant_hostname']
   if vconfig['vagrant_ip'] == "0.0.0.0" && Vagrant.has_plugin?("vagrant-auto_network")
     config.vm.network :private_network, :ip => vconfig['vagrant_ip'], :auto_network => true
@@ -39,9 +41,11 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.vm.network :public_network, ip: vconfig['vagrant_public_ip']
   end
 
+  # SSH options.
   config.ssh.insert_key = false
   config.ssh.forward_agent = true
 
+  # Vagrant box.
   config.vm.box = vconfig['vagrant_box']
 
   # If hostsupdater plugin is installed, add all server names as aliases.
@@ -63,28 +67,27 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
   end
 
+  # Synced folders.
   for synced_folder in vconfig['vagrant_synced_folders'];
-    if synced_folder['type'] == 'nfs'
-      config.vm.synced_folder synced_folder['local_path'], synced_folder['destination'],
-        type: synced_folder['type'],
-        rsync__auto: "false",
-        rsync__exclude: synced_folder['excluded_paths'],
-        rsync__args: ["--verbose", "--archive", "--no-owner", "--no-group", "--chmod=Dug=rwx,Do=rx,Fug=rw,Fo=r", "-z"], # "--chmod=Dug=rwx,Do=rx,Fug=rw,Fo=r" / "--delete"
-        id: synced_folder['id'],
-        create: synced_folder.include?('create') ? synced_folder['create'] : false,
-        mount_options: synced_folder.include?('mount_options') ? synced_folder['mount_options'] : []
-    else
-      config.vm.synced_folder synced_folder['local_path'], synced_folder['destination'],
-        type: synced_folder['type'],
-        rsync__auto: "false",
-        rsync__exclude: synced_folder['excluded_paths'],
-        rsync__args: ["--verbose", "--archive", "--delete", "--perms", "-z"], # "--chmod=Dug=rwx,Do=rx,Fug=rw,Fo=r"
-        id: synced_folder['id'],
-        create: synced_folder.include?('create') ? synced_folder['create'] : false,
+    options = {
+      type: synced_folder['type'],
+      rsync__auto: "true",
+      rsync__exclude: synced_folder['excluded_paths'],
+#     rsync__args: ["--verbose", "--archive", "--delete", "-z", "--chmod=ugo=rwX"],
+      rsync__args: ["--verbose", "--archive", "--no-owner", "--no-group", "--chmod=Dug=rwx,Do=rx,Fug=rw,Fo=r", "-z"], # "--chmod=Dug=rwx,Do=rx,Fug=rw,Fo=r" / "--delete"
+      id: synced_folder['id'],
+      create: synced_folder.include?('create') ? synced_folder['create'] : false,
+      if synced_folder['type'] == 'rsync';
         owner: 'vagrant',
         group: 'www-data'
-#        mount_options: synced_folder.include?('mount_options') ? synced_folder['mount_options'] : []
+        mount_options: synced_folder.include?('mount_options') ? synced_folder['mount_options'] : []
+      end
+    }
+
+    if synced_folder.include?('options_override');
+      options = options.merge(synced_folder['options_override'])
     end
+    config.vm.synced_folder synced_folder['local_path'], synced_folder['destination'], options
   end
 
   # Configure the window for gatling to coalesce writes.
@@ -95,17 +98,18 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.gatling.rsync_on_startup = false
   end
 
-  # Provision using Ansible provisioner if Ansible is installed on host.
+  # Allow override of the default synced folder type.
+  config.vm.synced_folder ".", "/vagrant", type: vconfig.include?('vagrant_synced_folder_default_type') ? vconfig['vagrant_default_synced_folder_type'] : 'nfs'
+
+  # Provisioning. Use ansible if it's installed on host, ansible_local if not.
   if which('ansible-playbook')
     config.vm.provision "ansible" do |ansible|
       ansible.playbook = "#{dir}/provisioning/playbook.yml"
-      ansible.sudo = true
     end
-  # Provision using shell provisioner and JJG-Ansible-Windows otherwise.
   else
-    config.vm.provision "shell" do |sh|
-      sh.path = "#{dir}/provisioning/JJG-Ansible-Windows/windows.sh"
-      sh.args = "/provisioning/playbook.yml"
+    config.vm.provision "ansible_local" do |ansible|
+      ansible.playbook = "provisioning/playbook.yml"
+      ansible.galaxy_role_file = "provisioning/requirements.yml"
     end
   end
 
