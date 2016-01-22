@@ -34,7 +34,8 @@ server {
         fastcgi_intercept_errors on;
         fastcgi_read_timeout 120;
         include fastcgi_params;
-        fastcgi_pass 127.0.0.1:9000;
+        #fastcgi_pass 127.0.0.1:9000;
+        fastcgi_pass unix:/var/run/php5-fpm.sock;
     }
 
     location @rewrite {
