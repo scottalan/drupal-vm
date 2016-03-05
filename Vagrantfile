@@ -105,6 +105,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # Allow override of the default synced folder type.
   config.vm.synced_folder '.', '/vagrant', type: vconfig.include?('vagrant_synced_folder_default_type') ? vconfig['vagrant_synced_folder_default_type'] : 'nfs'
 
+  # Set UID and GID mapping for nfs.
+    config.nfs.map_uid = 900
+    config.nfs.map_gid = 33
+    
   # Provisioning. Use ansible if it's installed, JJG-Ansible-Windows if not.
   if which('ansible-playbook')
     config.vm.provision 'ansible' do |ansible|
