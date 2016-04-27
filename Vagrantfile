@@ -67,6 +67,11 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
   end
 
+  #Bind FS
+#  config.bindfs.bind_folder "/opt/drupal-vm/sites/kobol-dev/afl-cio-kobol/build/html/sites/default/files", "/opt/drupal-vm/sites/kobol-dev/afl-cio-kobol/build/html/sites/default/files",
+#    perms: "u=rwx:g=rwx:o=rwx",
+#    create_as_user: true
+
   # Synced folders.
   for synced_folder in vconfig['vagrant_synced_folders'];
     options = {
@@ -74,15 +79,15 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       rsync__auto: "true",
       rsync__exclude: synced_folder['excluded_paths'],
 #     rsync__args: ["--verbose", "--archive", "--delete", "-z", "--chmod=ugo=rwX"],
-      rsync__args: ["--verbose", "--archive", "--no-owner", "--no-group", "--chmod=Dug=rwx,Do=rx,Fug=rw,Fo=r", "-z"], # "--chmod=Dug=rwx,Do=rx,Fug=rw,Fo=r" / "--delete"
+      rsync__args: ["-avz", "--no-perms", "--no-owner", "--no-group", "--chmod=Dug=rwx,Do=rx,Fug=rw,Fo=r", "-z"], # "--chmod=Dug=rwx,Do=rx,Fug=rw,Fo=r" / "--delete"
       id: synced_folder['id'],
       create: synced_folder.include?('create') ? synced_folder['create'] : false,
     }
 
     if synced_folder['type'] == 'rsync';
-      options.owner = 'vagrant'
-      options.group = 'www-data'
-      options.mount_options = synced_folder.include?('mount_options') ? synced_folder['mount_options'] : []
+      options['owner'] = vconfig['owner']
+      options['group'] = vconfig['group']
+      options['mount_options'] = synced_folder.include?('mount_options') ? synced_folder['mount_options'] : []
     end
 
     if synced_folder.include?('options_override');
@@ -101,6 +106,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # Allow override of the default synced folder type.
   config.vm.synced_folder ".", "/vagrant", type: vconfig.include?('vagrant_synced_folder_default_type') ? vconfig['vagrant_default_synced_folder_type'] : 'nfs'
+
+  # This uses uid and gid of the user that started vagrant
+#  config.nfs.map_uid = Process.uid
+#  config.nfs.map_gid = Process.gid
+  config.nfs.map_uid = 900
+#  config.nfs.map_gid = 33
 
   # Provisioning. Use ansible if it's installed on host, ansible_local if not.
   if which('ansible-playbook')
@@ -154,4 +165,44 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # Set the name of the VM. See: http://stackoverflow.com/a/17864388/100134
   config.vm.define vconfig['vagrant_machine_name'] do |d|
   end
+
+  # dnsmasq
+
+  # set domain ending (required)
+  # adding this line enables dnsmasq handling
+  # config.dnsmasq.domain = '.dev'
+  config.dnsmasq.domain = '.dev'
+
+  # optional configuration...
+
+  # this plugin runs 'hostname -I' on the guest machine to obtain
+  # the guest ip address. you can overwrite this behaviour.
+  # config.dnsmasq.ip = '192.168.59.100'
+  config.dnsmasq.ip = vconfig['vagrant_ip']
+
+  # config.dnsmasq.ip = proc do |guest_machine|
+  #   guest_machine.communicate.sudo("command to obtain ip somehow") do |type, data|
+  #     # return something like '192.168.59.100' or ['192.168.59.100', '192.168.59.103']
+  #   end
+  # end
+
+  # this will prompt you during 'vagrant up' to choose an IP
+  # config.dnsmasq.ip = ['192.168.59.100', '192.168.59.103']
+
+  # overwrite default location for /etc/resolver directory
+  config.dnsmasq.resolver = '/etc/resolver'
+
+  # 'vagrant destroy' does not delete /etc/resolver nameserver file, defaults to false
+  # config.dnsmasq.keep_resolver_on_destroy = true
+
+  # overwrite default location for /etc/dnsmasq.conf
+  #brew_prefix = `brew --prefix`.strip
+  #config.dnsmasq.dnsmasqconf = brew_prefix + '/etc/dnsmasq.conf'
+  config.dnsmasq.dnsmasqconf = '/usr/local/etc/dnsmasq.conf'
+
+  # command for reloading dnsmasq after config changes
+  config.dnsmasq.reload_command = 'sudo launchctl unload /Library/LaunchDaemons/homebrew.mxcl.dnsmasq.plist; sudo launchctl load /Library/LaunchDaemons/homebrew.mxcl.dnsmasq.plist'
+
+  # disable dnsmasq handling
+  # config.dnsmasq.disable = true
 end
