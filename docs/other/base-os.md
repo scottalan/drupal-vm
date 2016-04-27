@@ -9,6 +9,8 @@ Currently-supported OSes are:
 
 For certain OSes, there are a couple other caveats and tweaks you may need to perform to get things running smoothly—the main features and latest development is only guaranteed to work with the default OS as configured in `example.config.yml`.
 
+Some other OSes should work, but are not regularly tested with Drupal VM, including Debian 8/Jessie (`debian/jessie64`) and Debian 7/Wheezy (`debian/wheezy64`).
+
 ## RedHat Enterprise Linux / CentOS 7
 
 **MySQL/MariaDB**: RHEL/CentOS 7 switched from using MySQL as the default database system to using MariaDB, so to make sure everything is configured properly, you need to add the following to `config.yml` so MariaDB installs correctly:
@@ -27,8 +29,6 @@ mysql_syslog_tag: mariadb
 mysql_pid_file: /var/run/mariadb/mariadb.pid
 ```
 
-**XHProf**: XHProf is installed in a different directory for RedHat/CentOS (as opposed to Debian/Ubuntu), you will need to update the `"xhprof.drupalvm.dev"` vhost to point to the `documentroot` `"/usr/share/pear/xhprof_html"`.
-
 ## RedHat Enterprise Linux / CentOS 6
 
 **Apache without FastCGI**: If you want to use Apache with CentOS 6 on Drupal VM, you will need to modify the syntax of your `apache_vhosts` and remove the `ProxyPassMatch` parameters from each one. Alternatively, you can use Nginx with the default configuration by setting `drupalvm_webserver: nginx` inside `config.yml`.
@@ -38,5 +38,3 @@ mysql_pid_file: /var/run/mariadb/mariadb.pid
 ```yaml
 php_opcache_enabled_in_ini: false
 ```
-
-**XHProf**: XHProf is installed in a different directory for RedHat/CentOS (as opposed to Debian/Ubuntu), you will need to update the `"xhprof.drupalvm.dev"` vhost to point to the `documentroot` `"/usr/share/pear/xhprof_html"`.
