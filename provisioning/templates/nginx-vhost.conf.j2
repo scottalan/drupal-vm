@@ -30,11 +30,17 @@ server {
     location ~ \.php$|^/update.php {
         fastcgi_split_path_info ^(.+?\.php)(|/.*)$;
         fastcgi_index index.php;
-        fastcgi_param SCRIPT_FILENAME $request_filename;
+
+        # If running with: 127.0.0.1:9000
+        #fastcgi_param SCRIPT_FILENAME $request_filename;
+
+        # If running with: unix:/var/run/php5-fpm.sock
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+
         fastcgi_intercept_errors on;
         fastcgi_read_timeout {{ fastcgi_read_timeout }};
         include fastcgi_params;
-        fastcgi_pass {{ php_fpm_listen }};
+        fastcgi_pass {{ nginx_fastcgi_pass }};
     }
 
     location @rewrite {
