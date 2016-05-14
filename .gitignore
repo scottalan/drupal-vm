@@ -1,6 +1,7 @@
 .gitconfig
 .DS_Store
 .idea/
+logs/
 .project/
 .vagrant/
 .bundle/
