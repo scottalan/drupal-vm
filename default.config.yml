@@ -1,7 +1,7 @@
 ---
 # `vagrant_box` can also be set to geerlingguy/centos6, geerlingguy/centos7,
-# geerlingguy/ubuntu1204, parallels/ubuntu-14.04, etc.
-vagrant_box: geerlingguy/ubuntu1404
+# geerlingguy/ubuntu1404, geerlingguy/ubuntu1204, parallels/ubuntu-14.04, etc.
+vagrant_box: geerlingguy/ubuntu1604
 vagrant_user: vagrant
 vagrant_synced_folder_default_type: nfs
 
@@ -21,8 +21,9 @@ vagrant_public_ip: ""
 # http://docs.drupalvm.com/en/latest/extras/syncing-folders/ for more info.
 vagrant_synced_folders:
   # The first synced folder will be used for the default Drupal installation, if
-  # build_makefile: is 'true'.
-  - local_path: ~/Sites/drupalvm
+  # any of the build_* settings are 'true'. By default the folder is set to
+  # the drupal-vm folder.
+  - local_path: .
     destination: /var/www/drupalvm
     type: nfs
     create: true
@@ -34,34 +35,49 @@ vagrant_cpus: 2
 # The web server software to use. Can be either 'apache' or 'nginx'.
 drupalvm_webserver: apache
 
-# Set this to false if you are using a different site deployment strategy and
+# Set this to 'false' if you are using a different site deployment strategy and
 # would like to configure 'vagrant_synced_folders' and 'apache_vhosts' manually.
-build_makefile: true
-drush_makefile_path: ../../drupal.make.yml
+build_makefile: false
+drush_makefile_path: "{{ config_dir }}/drupal.make.yml"
 
-# Set this to false if you don't need to install drupal (using the drupal_*
+# Set 'build_makefile' to 'false' and this to 'true' if you are using a
+# composer based site deployment strategy.
+build_composer: false
+drupal_composer_path: "{{ config_dir }}/drupal.composer.json"
+drupal_composer_install_dir: "/var/www/drupalvm/drupal"
+drupal_composer_dependencies:
+  - "drupal/devel:8.*"
+
+# Set this to 'true' and 'build_makefile', 'build_composer' to 'false' if you
+# are using Composer's create-project as a site deployment strategy.
+build_composer_project: true
+drupal_composer_project_package: "drupal-composer/drupal-project:8.x-dev"
+drupal_composer_project_options: "--prefer-dist --stability dev --no-interaction"
+
+# Set this to 'false' if you don't need to install drupal (using the drupal_*
 # settings below), but instead copy down a database (e.g. using drush sql-sync).
 install_site: true
 
-# Settings for building a Drupal site from a makefile (if 'build_makefile:'
-# is 'true').
+# Required Drupal settings.
+drupal_core_path: "{{ drupal_composer_install_dir }}/web"
+drupal_mysql_user: drupal
+drupal_mysql_password: drupal
+drupal_mysql_database: drupal
+
+# Settings for installing a Drupal site if 'install_site:' is 'true'.
 drupal_major_version: 8
-drupal_core_path: "/var/www/drupalvm/drupal"
 drupal_domain: "{{ vagrant_hostname }}"
 drupal_site_name: "Drupal"
 drupal_install_profile: standard
 drupal_enable_modules: [ 'devel' ]
 drupal_account_name: admin
 drupal_account_pass: admin
-drupal_mysql_user: drupal
-drupal_mysql_password: drupal
-drupal_mysql_database: drupal
 
 # Additional arguments or options to pass to `drush site-install`.
 drupal_site_install_extra_args: []
 
-# Cron jobs are added to the root user's crontab. Keys include name (required),
-# minute, hour, day, weekday, month, job (required), and state.
+# Cron jobs are added to the vagrant user's crontab. Keys include name
+# (required), minute, hour, day, weekday, month, job (required), and state.
 drupalvm_cron_jobs: []
   # - {
   #   name: "Drupal Cron",
@@ -71,13 +87,14 @@ drupalvm_cron_jobs: []
 
 # Drupal VM automatically creates a drush alias file in your ~/.drush folder if
 # this variable is 'true'.
-configure_local_drush_aliases: true
+configure_drush_aliases: true
 
 # Apache VirtualHosts. Add one for each site you are running inside the VM. For
 # multisite deployments, you can point multiple servernames at one documentroot.
 # View the geerlingguy.apache Ansible Role README for more options.
 apache_vhosts:
   - servername: "{{ drupal_domain }}"
+    serveralias: "www.{{ drupal_domain }}"
     documentroot: "{{ drupal_core_path }}"
     extra_parameters: |
           ProxyPassMatch ^/(.*\.php(/.*)?)$ "fcgi://127.0.0.1:9000{{ drupal_core_path }}"
@@ -100,6 +117,9 @@ apache_vhosts:
   - servername: "{{ vagrant_ip }}"
     serveralias: "dashboard.{{ vagrant_hostname }}"
     documentroot: "{{ dashboard_install_dir }}"
+    extra_parameters: |
+          ProxyPassMatch ^/(.*\.php(/.*)?)$ "fcgi://127.0.0.1:9000{{ dashboard_install_dir }}"
+          DirectoryIndex index.html
 
 apache_remove_default_vhost: true
 apache_mods_enabled:
@@ -113,7 +133,7 @@ apache_mods_enabled:
 # here. Set the 'is_php' property for document roots that contain PHP apps like
 # Drupal.
 nginx_hosts:
-  - server_name: "{{ drupal_domain }}"
+  - server_name: "{{ drupal_domain }} www.{{ drupal_domain }}"
     root: "{{ drupal_core_path }}"
     is_php: true
 
@@ -135,8 +155,8 @@ nginx_hosts:
 nginx_remove_default_vhost: true
 nginx_ppa_use: true
 
-# MySQL Databases and users. If build_makefile: is true, first database will
-# be used for the makefile-built site.
+# MySQL Databases and users. If 'install_site' is 'true', first database will
+# be used for the site.
 mysql_databases:
   - name: "{{ drupal_mysql_database }}"
     encoding: utf8
@@ -152,9 +172,11 @@ mysql_users:
 # to install *any* extras, make set this value to an empty set, e.g. `[]`.
 installed_extras:
   - adminer
+  # - blackfire
   - drupalconsole
   - mailhog
-  - memcached
+  # - memcached
+  # - newrelic
   # - nodejs
   - pimpmylog
   # - redis
@@ -162,21 +184,12 @@ installed_extras:
   # - selenium
   # - solr
   - varnish
-  - xdebug
-  - xhprof
+  # - xdebug
+  # - xhprof
 
 # Add any extra apt or yum packages you would like installed.
 extra_packages:
-  - unzip
-
-# `nodejs` must be in installed_extras for this to work. Valid examples: "0.10",
-# "0.12", "4.x", "5.x".
-nodejs_version: "0.12"
-nodejs_npm_global_packages: []
-
-# `ruby` must be in installed_extras for this to work.
-ruby_install_gems_user: "{{ drupalvm_user }}"
-ruby_install_gems: []
+  - sqlite
 
 # You can configure almost anything else on the server in the rest of this file.
 extra_security_enabled: false
@@ -198,8 +211,9 @@ firewall_allowed_tcp_ports:
   - "8983"
 firewall_log_dropped_packets: false
 
-# PHP Configuration. Currently-supported versions: 5.5, 5.6, 7.0.
-php_version: "5.6"
+# PHP Configuration. Currently-supported versions: 5.6, 7.0.
+# To use 5.6, see: http://docs.drupalvm.com/en/latest/other/php-56/
+php_version: "7.0"
 php_memory_limit: "192M"
 php_display_errors: "On"
 php_display_startup_errors: "On"
@@ -212,7 +226,7 @@ php_max_input_vars: "4000"
 
 # Drupal VM defaults to using PHP-FPM with either Apache or Nginx. If you wish
 # to instead use Apache + mod_php with an Ubuntu base box, make sure you add
-# libapache2-mod-php5 to `extra_packages` elsewhere in this config file.
+# libapache2-mod-php7.0 to `extra_packages` elsewhere in this config file.
 php_enable_php_fpm: true
 php_fpm_listen: "127.0.0.1:9000"
 
@@ -220,11 +234,12 @@ composer_path: /usr/bin/composer
 composer_home_path: "/home/{{ drupalvm_user }}/.composer"
 composer_home_owner: "{{ drupalvm_user }}"
 composer_home_group: "{{ drupalvm_user }}"
-# composer_global_packages:
-#   - { name: phpunit/phpunit, release: '@stable' }
+composer_global_packages:
+  - { name: hirak/prestissimo, release: '^0.3' }
 
-# Run specified scripts after VM is provisioned. Path is relative to the
-# `provisioning/playbook.yml` file.
+# Run specified scripts before or after VM is provisioned. Path is relative to
+# the `provisioning/playbook.yml` file.
+pre_provision_scripts: []
 post_provision_scripts: []
   # - "../examples/scripts/configure-solr.sh"
 
@@ -235,7 +250,18 @@ mysql_slow_query_time: 2
 mysql_wait_timeout: 300
 adminer_install_filename: index.php
 
-# Varnish Configuration.
+# Node.js configuration (if enabled above).
+# Valid examples: "0.10", "0.12", "4.x", "5.x".
+nodejs_version: "0.12"
+nodejs_npm_global_packages: []
+nodejs_install_npm_user: "{{ drupalvm_user }}"
+npm_config_prefix: "/home/{{ drupalvm_user }}/.npm-global"
+
+# Ruby Configuration (if enabled above).
+ruby_install_gems_user: "{{ drupalvm_user }}"
+ruby_install_gems: []
+
+# Varnish Configuration (if enabled above).
 varnish_listen_port: "81"
 varnish_default_vcl_template_path: templates/drupalvm.vcl.j2
 varnish_default_backend_host: "127.0.0.1"
@@ -256,7 +282,7 @@ php_xdebug_idekey: PHPSTORM
 php_xdebug_max_nesting_level: 256
 
 # Solr Configuration (if enabled above).
-solr_version: "4.10.4"
+solr_version: "5.5.1"
 solr_xms: "64M"
 solr_xmx: "128M"
 
@@ -266,3 +292,4 @@ selenium_version: 2.46.0
 # Other configuration.
 dashboard_install_dir: /var/www/dashboard
 known_hosts_path: ~/.ssh/known_hosts
+#ssh_home: "{{ drupal_core_path }}"

@@ -13,9 +13,6 @@ installed_extras:
 
 # Make sure the following four packages are in composer_global_packages:
 composer_global_packages:
-  - { name: behat/mink, release: '1.5.*@stable' }
-  - { name: behat/mink-goutte-driver, release: '*' }
-  - { name: behat/mink-selenium2-driver, release: '*' }
   - { name: drupal/drupal-extension, release: '*' }
 ```
 
@@ -26,11 +23,11 @@ $ behat --version
 behat version 3.0.15
 ```
 
-_You can also include the `behat/*` and `drupal/drupal-extension` directly in your project's `composer.json` file, and install the dependencies per-project. Either option (installing globally, like above, or installing per-project) is perfectly acceptable._
+_You can also include `drupal/drupal-extension` directly in your project's `composer.json` file, and install the dependencies per-project. Either option (installing globally, like above, or installing per-project) is perfectly acceptable._
 
 ## Setting up Behat for your project
 
-Using the default Drupal site as an example (it's installed in `/var/www/drupalvm/drupal` by default, and is shared to `~/Sites/drupalvm/drupal` on your host machine), the following steps will help you get your first Behat tests up and running!
+Using the default Drupal site as an example (it's installed in `/var/www/drupalvm/drupal` by default, and is shared to the `./drupal` folder inside the drupal-vm directory on your host machine), the following steps will help you get your first Behat tests up and running!
 
   1. Create a `behat.yml` file inside the docroot of your site (e.g. create this file alongside the rest of the Drupal codebase at `/var/www/drupalvm/drupal/behat.yml`), with the following contents:
 

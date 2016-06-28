@@ -20,10 +20,10 @@ if is_windows
   # Provisioning configuration for shell script.
   config.vm.provision "shell" do |sh|
     sh.path = "provisioning/JJG-Ansible-Windows/windows.sh"
-    sh.args = "provisioning/playbook.yml"
+    sh.args = "/vagrant/provisioning/playbook.yml"
   end
 else
-  # Provisioning configuration for Ansible (for Mac/Linux hosts).
+  # Provisioning configuration for Ansible (for macOS/Linux hosts).
   config.vm.provision "ansible" do |ansible|
     ansible.playbook = "provisioning/playbook.yml"
     ansible.sudo = true

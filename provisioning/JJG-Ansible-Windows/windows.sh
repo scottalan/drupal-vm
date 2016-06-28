@@ -9,6 +9,23 @@
 # Uncomment if behind a proxy server.
 # export {http,https,ftp}_proxy='http://username:password@proxy-host:80'
 
+args=()
+extra_vars=("is_windows=true")
+
+# Process and remove all flags.
+while (($#)); do
+  case $1 in
+    --extra-vars=*) extra_vars+=("${1#*=}") ;;
+    --extra-vars|-e) shift; extra_vars+=("$1") ;;
+    -*) echo "invalid option: $1" >&2; exit 1 ;;
+    *) args+=("$1") ;;
+  esac
+  shift
+done
+
+# Restore the arguments without flags.
+set -- "${args[@]}"
+
 ANSIBLE_PLAYBOOK=$1
 PLAYBOOK_DIR=${ANSIBLE_PLAYBOOK%/*}
 
@@ -17,7 +34,7 @@ YUM=$(which yum 2>/dev/null)
 APT_GET=$(which apt-get 2>/dev/null)
 
 # Make sure Ansible playbook exists.
-if [ ! -f "/vagrant/$ANSIBLE_PLAYBOOK" ]; then
+if [ ! -f "$ANSIBLE_PLAYBOOK" ]; then
   echo "Cannot find Ansible playbook."
   exit 1
 fi
@@ -35,19 +52,15 @@ if ! command -v ansible >/dev/null; then
     exit 1;
   fi
 
-  echo "Installing pip via easy_install."
-  wget https://raw.githubusercontent.com/ActiveState/ez_setup/v0.9/ez_setup.py
-  python ez_setup.py && rm -f ez_setup.py
-  easy_install pip
+  echo "Installing pip."
+  wget https://bootstrap.pypa.io/get-pip.py
+  python get-pip.py && rm -f get-pip.py
 
-  # Make sure setuptools are installed crrectly.
-  pip install setuptools --no-use-wheel --upgrade
-
-  # Install GCC / required build tools.
+  echo "Installing required build tools."
   if [[ ! -z $YUM ]]; then
-    yum install -y gcc
+    yum install -y gcc libffi-devel openssl-devel
   elif [[ ! -z $APT_GET ]]; then
-    apt-get install -y build-essential
+    apt-get install -y build-essential libssl-dev libffi-dev
   fi
 
   echo "Installing required python modules."
@@ -59,8 +72,8 @@ fi
 
 # Install requirements.
 echo "Installing Ansible roles from requirements file, if available."
-find "/vagrant/$PLAYBOOK_DIR" \( -name "requirements.yml" -o -name "requirements.txt" \) -exec sudo ansible-galaxy install --ignore-errors -r {} \;
+find "$PLAYBOOK_DIR" \( -name "requirements.yml" -o -name "requirements.txt" \) -exec sudo ansible-galaxy install --force --ignore-errors -r {} \;
 
 # Run the playbook.
 echo "Running Ansible provisioner defined in Vagrantfile."
-ansible-playbook -i 'localhost,' "/vagrant/${ANSIBLE_PLAYBOOK}" --extra-vars "is_windows=true" --connection=local
+ansible-playbook -i 'localhost,' "${ANSIBLE_PLAYBOOK}" --extra-vars "${extra_vars[*]}" --connection=local

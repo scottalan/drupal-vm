@@ -1,3 +1,34 @@
+## Overriding Drupal VM's `default.config.yml` with `config.yml`
+
+If available, Drupal VM will load a `config.yml` where you can override any of the defaults set in `default.config.yml`. Commonly this is a copy of `default.config.yml` with the values tweaked to your own project. For an easier upgrade path you would only set the values you are actually overriding.
+
+```yaml
+vagrant_box: geerlingguy/centos7
+vagrant_hostname: my-custom-site.dev
+vagrant_machine_name: my_custom_site
+```
+
+## Overriding variables with a `local.config.yml`
+
+If available, Drupal VM will also load a `local.config.yml` after having loaded the main `config.yml`. Using this file you can override variables previously defined in `config.yml`. For teams who are sharing a VM configuration, this is a good place to configure anything that's specific to your own environment.
+
+```yaml
+# Increase the memory available to your Drupal site.
+vagrant_memory: 1536
+php_memory_limit: "512M"
+
+# Override the synced folders to use rsync instead of NFS.
+vagrant_synced_folders:
+  - local_path: .
+    destination: /var/www/drupalvm
+    type: rsync
+    create: true
+```
+
+_Note: The merge of the variables in these two files is shallow, so if you want to override a single item in a list, you will need to re-define all items in that list._
+
+## Extending the `Vagrantfile` with `Vagrantfile.local`
+
 Out of the box Drupal VM supports having VirtualBox, Parallels as well as VMware as a provider. Besides these there are multitude of others available (for example `vagrant-aws`, `vagrant-digitalocean`).
 
 If you want to use an unsupported provider, or otherwise modify the vagrant configuration in a way that is not exposed by Drupal VM, you can create a `Vagrantfile.local` in the root directory of this project.
@@ -11,15 +42,15 @@ config.vm.provider :virtualbox do |v|
   # Enable GUI mode instead of running a headless machine.
   v.gui = true
 
-  # Reduce disk usage of multiple boxes by sharing a master VM.
-  v.linked_clone = true
-
   # Cap the host CPU execution at 50% usage.
   v.customize ["modifyvm", :id, "--cpuexecutioncap", "50"]
 end
+
+# Disable the galaxy role re-installation during provisions.
+config.vm.provisioners[0].config.galaxy_role_file = nil
 ```
 
-## Example: Using the `vagrant-aws` provider
+### Example: Using the `vagrant-aws` provider
 
 Add the following variables to your `config.yml`.
 

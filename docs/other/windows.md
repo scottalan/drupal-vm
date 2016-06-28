@@ -44,6 +44,20 @@ You can use the [vagrant-winnfsd](https://github.com/GM-Alex/vagrant-winnfsd) pl
 
 Another option for the more adventurous is to manually install and configure WinNFSD, and manually mount the shares within your VM. This requires a bit more work, but could be more stable on Windows; see this blog post for more details: [Windows + Vagrant + WinNFSD without file update problems](https://hollyit.net/blog/windowsvagrantwinnfsd-without-file-update-problems).
 
+GuyPaddock's [fork of `vagrant-winnfsd`](https://github.com/GuyPaddock/vagrant-winnfsd) adds logging and debug messages. You can replace the vagrant-winnfsd gem inside `.vagrant.d\gems\gems` to use it instead. For further caveats, please read through [vagrant-winnfsd issue #12](https://github.com/winnfsd/vagrant-winnfsd/issues/12#issuecomment-78195957), and make the following changes to `config.yml`:
+
+    vagrant_synced_folder_default_type: ""
+
+Add `mount_options` to your synced folder to avoid an error:
+
+    type: nfs
+    mount_options: ["rw","vers=3","udp","nolock"]
+
+In a custom `Vagrantfile.local`, add user access to Vagrant:
+
+    config.winnfsd.uid=900
+    config.winnfsd.gid=900
+
 ### "Authentication failure" on vagrant up
 
 Some Windows users have reported running into an issue where an authentication failure is reported once the VM is booted (e.g. `drupalvm: Warning: Authentication failure. Retrying...` — see [#170](https://github.com/geerlingguy/drupal-vm/issues/170)). To fix this, do the following:
@@ -58,7 +72,7 @@ If you are running Windows 7 and `vagrant up` hangs, you may need to upgrade Pow
 
 ## Hosts file updates
 
-If you install either the `vagrant-hostsupdater` or `vagrant-hostmanager` plugin, you might get a permissions error when Vagrant tries changing the hosts file. On a Mac or Linux workstation, you're prompted for a sudo password so the change can be made, but on Windows, you have to do one of the following to make sure hostsupdater works correctly:
+If you install either the `vagrant-hostsupdater` or `vagrant-hostmanager` plugin, you might get a permissions error when Vagrant tries changing the hosts file. On a macOS or Linux workstation, you're prompted for a sudo password so the change can be made, but on Windows, you have to do one of the following to make sure hostsupdater works correctly:
 
   1. Run PowerShell or whatever CLI you use with Vagrant as an administrator. Right click on the application and select 'Run as administrator', then proceed with `vagrant` commands as normal.
   2. Change the permissions on the hosts file so your account has permission to edit the file (this has security implications, so it's best to use option 1 unless you know what you're doing). To do this, open `%SystemRoot%\system32\drivers\etc` in Windows Explorer, right-click the `hosts` file, and under Security, add your account and give yourself full access to the file.
