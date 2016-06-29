@@ -1,0 +1,235 @@
+---
+# If you want to switch from Drupal 8 (default) to Drupal 7 on the initial
+# install, do the following:
+#
+# Switch to using a Drush Make file.
+# Update the Drupal version and core inside the drupal.make.yml file.
+# Update drupal_major_version inside config.yml.
+#
+# Other:
+#
+# Install a few plugins:
+#   - vagrant plugin install vagrant-bindfs && vagrant plugin install vagrant-dnsmasq
+
+vagrant_box: geerlingguy/ubuntu1404 # Supports > php5.6
+vagrant_ip: 1.3.3.7
+vagrant_host_ip: 1.3.3.1
+
+#
+# NOTE: DO NOT USE A '.' IN THE SITE NAME. e.g., test.dev
+#
+vagrant_synced_folders:
+  # The first synced folder will be used for the default Drupal installation, if
+  # any of the build_* settings are 'true'. By default the folder is set to
+  # the drupal-vm folder.
+  - local_path: /opt/drupal-vm/sites
+    destination: /opt/drupal-vm/sites
+    type: nfs
+    create: true
+
+#    # JNJ PKU - Drupal 7 - Atrium
+#  - local_path: /opt/drupal-vm/sites/jnj
+#    destination: /opt/drupal-vm/sites/jnj
+#    files: /opt/drupal-vm/sites/jnj/build/html/sites/default/files
+#    mount_options: ['vers=3, dmode=775. fmode=664']
+#    type: nfs
+#    id: jnjpku
+#    excluded_paths: [".idea/"]
+#    create: true
+#
+#    # Bassmaster - Drupal 7 - Atrium
+#  - local_path: /opt/drupal-vm/sites/bassmaster
+#    destination: /opt/drupal-vm/sites/bassmaster
+#    files: /opt/drupal-vm/sites/bassmaster/build/html/sites/default/files
+#    mount_options: ['vers=3, dmode=775. fmode=664']
+#    type: nfs
+#    id: bassmaster
+#    excluded_paths: [".idea/"]
+#    create: true
+#
+#    # AFLCIO - Phase2 Dev site
+#  - local_path: /opt/drupal-vm/sites/kobol-dev
+#    destination: /opt/drupal-vm/sites/kobol-dev
+#    mount_options: ['vers=3, dmode=775. fmode=664']
+#    type: nfs
+#    id: kobol-dev
+#    excluded_paths: [".idea/"]
+#    create: true
+
+vagrant_memory: 4096
+vagrant_cpus: 4
+
+drupalvm_webserver: nginx
+
+# Set this to 'true' and 'build_makefile', 'build_composer' to 'false' if you
+# are using Composer's create-project as a site deployment strategy.
+build_composer_project: false
+
+# Set this to 'false' if you don't need to install drupal (using the drupal_*
+# settings below), but instead copy down a database (e.g. using drush sql-sync).
+install_site: false
+
+# Required Drupal settings.
+drupal_core_path: "{{ drupal_composer_install_dir }}/html"
+drupal_mysql_user: drupal
+drupal_mysql_password: drupal
+drupal_mysql_database: drupal
+
+# Settings for installing a Drupal site if 'install_site:' is 'true'.
+drupal_major_version: 7
+drupal_domain: "{{ vagrant_hostname }}"
+drupal_site_name: "Drupal"
+drupal_install_profile: standard
+drupal_enable_modules: [ 'devel' ]
+drupal_account_name: admin
+drupal_account_pass: scott
+
+# Additional arguments or options to pass to `drush site-install`.
+drupal_site_install_extra_args: []
+
+nginx_hosts:
+  - server_name: "{{ drupal_domain }} www.{{ drupal_domain }}"
+    root: "{{ drupal_core_path }}"
+    is_php: true
+
+  - server_name: "adminer.{{ vagrant_hostname }}"
+    root: "{{ adminer_install_dir }}"
+    is_php: true
+
+  - server_name: "xhprof.{{ vagrant_hostname }}"
+    root: "{{ php_xhprof_html_dir }}"
+    is_php: true
+
+  - server_name: "pimpmylog.{{ vagrant_hostname }}"
+    root: "{{ pimpmylog_install_dir }}"
+    is_php: true
+
+  - server_name: "{{ vagrant_ip }} dashboard.{{ vagrant_hostname }}"
+    root: "{{ dashboard_install_dir }}"
+
+  - server_name: "jnj.dev"
+    root: "/opt/drupal-vm/sites/jnj/build/html"
+    is_php: true
+
+  - server_name: "bassmaster.dev"
+    root: "/opt/drupal-vm/sites/bassmaster/build/html"
+    is_php: true
+
+  - server_name: "kobol.dev"
+    root: "/opt/drupal-vm/sites/kobol-dev/public/build/html"
+    is_php: true
+
+installed_extras:
+  # - adminer
+  # - blackfire
+  # - drupalconsole
+  # - mailhog
+  - memcached
+  # - newrelic
+  - nodejs
+  # - pimpmylog
+  - redis
+  # - ruby
+  # - selenium
+  - solr
+  - varnish
+  - xdebug
+  # - xhprof
+
+extra_packages:
+  - unzip
+
+extra_security_enabled: false
+
+drush_version: "7.2.0"
+
+php_version: "5.6.9"
+php_memory_limit: "384M"
+php_max_execution_time: 90
+
+php_fpm_listen: "/var/run/php5-fpm.sock"
+
+post_provision_scripts:
+  - "post_provision_scripts/bash.sh"
+  # - "../examples/scripts/configure-solr.sh"
+
+php_xdebug_default_enable: 1
+
+## Additions ##
+
+# Webserver
+#
+# If your usage of PHP is tied to a web server (e.g. Apache or Nginx), leave
+# this default value. If you are using PHP server-side or to run some small
+# application, set this value to false so this role doesn't attempt to interact
+# with a web server.
+#
+#php_webserver_daemon: false
+
+# This needs to be set, not sure this will actually set this in: /etc/php5/conf.d/xdebug.ini on provision.
+php_xdebug_remote_autostart: 1
+
+# An example of how to configure:
+#
+# http://myshell.co.uk/blog/2012/07/adjusting-child-processes-for-php-fpm-nginx/
+#
+# Overrides for fpm.
+#php_fpm_pm_max_children: 50
+#php_fpm_pm_start_servers: 10
+#php_fpm_pm_min_spare_servers: 10
+#php_fpm_pm_max_spare_servers: 25
+
+# Setting this high. Useful when debugging.
+fastcgi_read_timeout: 600
+
+# nginx confs
+#
+# If running with: unix:/var/run/php5-fpm.sock
+#
+# Set this value in: nginx-vhost.conf.j2
+#fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+#
+# If running with: 127.0.0.1:9000
+#
+# Set this value in: nginx-vhost.conf.j2
+#fastcgi_param SCRIPT_FILENAME $request_filename;
+#
+#php_fpm_listen: "127.0.0.1:9000"
+nginx_fastcgi_pass: "unix:{{ php_fpm_listen }}"
+
+# APC
+php_enable_apc: false
+
+# PHP Version
+php_install_from_source: false
+
+# Ondřej Surý's PPA for PHP 7.0 is used to install PHP 7, but you can switch to
+# using different 5.6 packages instead by making the following changes:
+#
+# These are needed for php 5.6 or less than 7.0 on ubuntu 16.04
+#
+php_packages:
+  - php5
+  - php5-apcu
+  - php5-mcrypt
+  - php5-cli
+  - php5-common
+  - php5-curl
+  - php5-dev
+  - php5-fpm
+  - php5-gd
+  - php5-sqlite
+  - php-pear
+  - libpcre3-dev
+php_conf_paths:
+  - /etc/php5/fpm
+  - /etc/php5/apache2
+  - /etc/php5/cli
+php_extension_conf_paths:
+  - /etc/php5/fpm/conf.d
+  - /etc/php5/apache2/conf.d
+  - /etc/php5/cli/conf.d
+php_fpm_daemon: php5-fpm
+php_fpm_conf_path: "/etc/php5/fpm"
+php_fpm_pool_conf_path: "/etc/php5/fpm/pool.d/www.conf"
+php_mysql_package: php5-mysql
