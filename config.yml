@@ -131,10 +131,10 @@ apache_vhosts:
           DirectoryIndex index.html
 
   - servername: "{{ bass_server }}"
-      serveralias: "{{ bass_server }}"
-      documentroot: "{{ bass_root }}"
-      extra_parameters: |
-            ProxyPassMatch ^/(.*\.php(/.*)?)$ "fcgi://127.0.0.1:9000{{ bass_root }}"
+    serveralias: "{{ bass_server }}"
+    documentroot: "{{ bass_root }}"
+    extra_parameters: |
+          ProxyPassMatch ^/(.*\.php(/.*)?)$ "fcgi://127.0.0.1:9000{{ bass_root }}"
 
 apache_remove_default_vhost: true
 apache_mods_enabled:
