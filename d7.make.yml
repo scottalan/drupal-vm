@@ -1,0 +1,9 @@
+api: '2'
+core: 7.x
+projects:
+  openatrium:
+    type: profile
+    version: 2.60-rc1
+    subdir: ''
+includes:
+  - drupal-org-core.make.yml

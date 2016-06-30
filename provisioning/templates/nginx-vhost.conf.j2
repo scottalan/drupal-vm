@@ -34,7 +34,11 @@ server {
         fastcgi_intercept_errors on;
         fastcgi_read_timeout 120;
         include fastcgi_params;
+        {% if nginx_socket is defined %}
+        fastcgi_pass {{ nginx_socket }}{{ php_fpm_listen }};
+        {% else %}
         fastcgi_pass {{ php_fpm_listen }};
+        {% endif %}
     }
 
     location @rewrite {
