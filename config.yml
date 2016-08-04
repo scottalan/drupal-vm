@@ -22,39 +22,39 @@ vagrant_synced_folders:
   # The first synced folder will be used for the default Drupal installation, if
   # any of the build_* settings are 'true'. By default the folder is set to
   # the drupal-vm folder.
-  - local_path: /opt/drupal-vm/sites
-    destination: /opt/drupal-vm/sites
+#  - local_path: /opt/drupal-vm/sites
+#    destination: /opt/drupal-vm/sites
+#    type: nfs
+#    create: true
+
+    # JNJ PKU - Drupal 7 - Atrium
+  - local_path: /opt/drupalvm/sites/jnj
+    destination: /opt/drupalvm/sites/jnj
+    files: /opt/drupalvm/sites/jnj/build/html/sites/default/files
+    mount_options: ['vers=3, dmode=775. fmode=664']
     type: nfs
+    id: jnj
+    excluded_paths: [".idea/"]
     create: true
 
-#    # JNJ PKU - Drupal 7 - Atrium
-#  - local_path: /opt/drupal-vm/sites/jnj
-#    destination: /opt/drupal-vm/sites/jnj
-#    files: /opt/drupal-vm/sites/jnj/build/html/sites/default/files
-#    mount_options: ['vers=3, dmode=775. fmode=664']
-#    type: nfs
-#    id: jnjpku
-#    excluded_paths: [".idea/"]
-#    create: true
-#
-#    # Bassmaster - Drupal 7 - Atrium
-#  - local_path: /opt/drupal-vm/sites/bassmaster
-#    destination: /opt/drupal-vm/sites/bassmaster
-#    files: /opt/drupal-vm/sites/bassmaster/build/html/sites/default/files
-#    mount_options: ['vers=3, dmode=775. fmode=664']
-#    type: nfs
-#    id: bassmaster
-#    excluded_paths: [".idea/"]
-#    create: true
-#
-#    # AFLCIO - Phase2 Dev site
-#  - local_path: /opt/drupal-vm/sites/kobol-dev
-#    destination: /opt/drupal-vm/sites/kobol-dev
-#    mount_options: ['vers=3, dmode=775. fmode=664']
-#    type: nfs
-#    id: kobol-dev
-#    excluded_paths: [".idea/"]
-#    create: true
+    # Bassmaster - Drupal 7 - Atrium
+  - local_path: /opt/drupalvm/sites/bassmaster
+    destination: /opt/drupalvm/sites/bassmaster
+    files: /opt/drupalvm/sites/bassmaster/build/html/sites/default/files
+    mount_options: ['vers=3, dmode=775. fmode=664']
+    type: nfs
+    id: bassmaster
+    excluded_paths: [".idea/"]
+    create: true
+
+    # CRS - Phase2 Dev site
+  - local_path: /opt/drupalvm/sites/crs
+    destination: /opt/drupalvm/sites/crs
+    mount_options: ['vers=3, dmode=775. fmode=664']
+    type: nfs
+    id: crs
+    excluded_paths: [".idea/"]
+    create: true
 
 vagrant_memory: 4096
 vagrant_cpus: 4
@@ -108,15 +108,15 @@ nginx_hosts:
     root: "{{ dashboard_install_dir }}"
 
   - server_name: "jnj.dev"
-    root: "/opt/drupal-vm/sites/jnj/build/html"
+    root: "/opt/drupalvm/sites/jnj/build/html"
     is_php: true
 
   - server_name: "bassmaster.dev"
-    root: "/opt/drupal-vm/sites/bassmaster/build/html"
+    root: "/opt/drupalvm/sites/bassmaster/build/html"
     is_php: true
 
-  - server_name: "kobol.dev"
-    root: "/opt/drupal-vm/sites/kobol-dev/public/build/html"
+  - server_name: "crs.dev"
+    root: "/opt/drupalvm/sites/crs/public/build/html"
     is_php: true
 
 installed_extras:
@@ -126,7 +126,7 @@ installed_extras:
   # - mailhog
   - memcached
   # - newrelic
-  - nodejs
+  # - nodejs
   # - pimpmylog
   - redis
   # - ruby
@@ -220,6 +220,7 @@ php_packages:
   - php5-gd
   - php5-sqlite
   - php-pear
+  - php5-memached
   - libpcre3-dev
 php_conf_paths:
   - /etc/php5/fpm
