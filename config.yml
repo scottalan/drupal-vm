@@ -22,6 +22,7 @@ vagrant_public_ip: ""
 vagrant_synced_folders:
   # The first synced folder will be used for the default Drupal installation, if
   # build_makefile: is 'true'.
+
   - local_path: /opt/drupalvm/sites/oa
     destination: /var/www/drupalvm/sites/oa
     type: nfs
@@ -34,6 +35,11 @@ vagrant_synced_folders:
 
   - local_path: /opt/drupalvm/sites/aflcio
     destination: /var/www/drupalvm/sites/aflcio
+    type: nfs
+    create: true
+
+  - local_path: /opt/drupalvm/sites/bassmaster
+    destination: /var/www/drupalvm/sites/bassmaster
     type: nfs
     create: true
 
@@ -127,10 +133,6 @@ nginx_hosts:
     root: "/var/www/drupalvm/sites/formio/build/html"
     is_php: true
 
-  - server_name: "aflcio.dev"
-    root: "/var/www/drupalvm/sites/aflcio/build/html"
-    is_php: true
-
   - server_name: "adminer.drupalvm.dev"
     root: "/opt/adminer"
     is_php: true
@@ -162,10 +164,6 @@ mysql_databases:
     encoding: utf8
     collation: utf8_general_ci
 
-  - name: "aflcio"
-    encoding: utf8
-    collation: utf8_general_ci
-
 mysql_users:
   - name: "{{ drupal_mysql_user }}"
     host: "%"
@@ -179,7 +177,7 @@ installed_extras:
 #  - drupalconsole
 #  - mailhog
   - memcached
-  - nodejs
+#  - nodejs
 #  - pimpmylog
   - redis
 #  - ruby
@@ -204,7 +202,7 @@ ruby_install_gems: []
 # You can configure almost anything else on the server in the rest of this file.
 extra_security_enabled: false
 
-drush_version: 7.0.0
+drush_version: 7.2.0
 drush_keep_updated: true
 drush_composer_cli_options: "--prefer-dist --no-interaction"
 
