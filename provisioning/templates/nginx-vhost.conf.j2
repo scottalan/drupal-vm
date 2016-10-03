@@ -32,29 +32,18 @@ server {
         fastcgi_index index.php;
         fastcgi_param SCRIPT_FILENAME $request_filename;
         fastcgi_intercept_errors on;
-        fastcgi_read_timeout {{ fastcgi_read_timeout }};
+        fastcgi_read_timeout {{ php_max_execution_time }};
         include fastcgi_params;
         fastcgi_pass {{ php_fpm_listen }};
     }
 
     location @rewrite {
-      #rewrite ^ /index.php;
-      rewrite ^/(.)$ /index.php?q=$1;
+        rewrite ^ /index.php;
     }
 
-    # Catch image styles for private files.
     location ~ ^/sites/.*/files/styles/ {
         try_files $uri @rewrite;
     }
-    #location ^~ /sites/default/files/styles/ {
-    #    try_files $uri @rewrite;
-    #}
-    #location ~* /sites/default/files/styles {
-    #    try_files $uri @rewrite;
-    #}
-    #location ~ ^/system/files/styles/ {
-    #    try_files $uri @rewrite;
-    #}
 
     location = /favicon.ico {
         log_not_found off;
@@ -67,13 +56,11 @@ server {
         access_log off;
     }
 
-    #location ~ (^|/)\. {
-    location ~ ../..php$ {
+    location ~ (^|/)\. {
         return 403;
     }
 
-    #location ~* \.(js|css|png|jpg|jpeg|gif|ico)$ {
-    location ~ .(js|css|png|jpg|jpeg|gif|ico)$ {
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico)$ {
         expires max;
         log_not_found off;
     }
