@@ -1,0 +1,204 @@
+---
+vagrant_box: geerlingguy/ubuntu1404
+vagrant_hostname: doevm.dev
+vagrant_machine_name: doevm
+
+vagrant_ip: 1.4.4.7
+vagrant_host_ip: 1.4.4.1
+
+vagrant_memory: 4096
+vagrant_cpus: 2
+
+drupalvm_webserver: apache
+
+# Nginx settings
+fastcgi_read_timeout: 600
+
+# Don't try to install a site.
+install_site: false
+
+##
+## CUSTOM PATHS
+##
+default_site_path: "/var/www"
+energy_path: "{{ default_site_path }}/energy/docroot"
+
+
+# Apache VirtualHosts. Add one for each site you are running inside the VM. For
+# multisite deployments, you can point multiple servernames at one documentroot.
+# View the geerlingguy.apache Ansible Role README for more options.
+apache_vhosts:
+  - servername: "energy.dev"
+    serveralias: "www.energy.dev"
+    documentroot: "{{ energy_path }}"
+    extra_parameters: |
+          ProxyPassMatch ^/(.*\.php(/.*)?)$ "fcgi://127.0.0.1:9000{{ energy_path }}"
+
+  - servername: "{{ drupal_domain }}"
+    serveralias: "www.{{ drupal_domain }}"
+    documentroot: "{{ drupal_core_path }}"
+    extra_parameters: |
+          ProxyPassMatch ^/(.*\.php(/.*)?)$ "fcgi://127.0.0.1:9000{{ drupal_core_path }}"
+
+  - servername: "adminer.{{ vagrant_hostname }}"
+    documentroot: "{{ adminer_install_dir }}"
+    extra_parameters: |
+          ProxyPassMatch ^/(.*\.php(/.*)?)$ "fcgi://127.0.0.1:9000{{ adminer_install_dir }}"
+
+  - servername: "xhprof.{{ vagrant_hostname }}"
+    documentroot: "{{ php_xhprof_html_dir }}"
+    extra_parameters: |
+          ProxyPassMatch ^/(.*\.php(/.*)?)$ "fcgi://127.0.0.1:9000{{ php_xhprof_html_dir }}"
+
+  - servername: "pimpmylog.{{ vagrant_hostname }}"
+    documentroot: "{{ pimpmylog_install_dir }}"
+    extra_parameters: |
+          ProxyPassMatch ^/(.*\.php(/.*)?)$ "fcgi://127.0.0.1:9000{{ pimpmylog_install_dir }}"
+
+  - servername: "{{ vagrant_ip }}"
+    serveralias: "dashboard.{{ vagrant_hostname }}"
+    documentroot: "{{ dashboard_install_dir }}"
+    extra_parameters: |
+          ProxyPassMatch ^/(.*\.php(/.*)?)$ "fcgi://127.0.0.1:9000{{ dashboard_install_dir }}"
+          DirectoryIndex index.html
+
+# PHP Configuration. Currently-supported versions: 5.6, 7.0.
+# To use 5.6, see: http://docs.drupalvm.com/en/latest/other/php-56/
+php_version: "5.6"
+php_memory_limit: "2048M"
+php_max_execution_time: "90"
+
+php_packages:
+  - php5
+  - php5-apcu
+  - php5-mcrypt
+  - php5-cli
+  - php5-common
+  - php5-curl
+  - php5-dev
+  - php5-fpm
+  - php5-gd
+  - php5-sqlite
+  - php-pear
+  - libpcre3-dev
+
+php_conf_paths:
+  - /etc/php5/fpm
+  - /etc/php5/apache2
+  - /etc/php5/cli
+
+php_extension_conf_paths:
+  - /etc/php5/fpm/conf.d
+  - /etc/php5/apache2/conf.d
+  - /etc/php5/cli/conf.d
+
+php_fpm_daemon: php5-fpm
+php_fpm_conf_path: "/etc/php5/fpm"
+php_fpm_pool_conf_path: "/etc/php5/fpm/pool.d/www.conf"
+php_mysql_package: php5-mysql
+
+# If you install `redis`:
+php_redis_package: php5-redis
+
+# If you install `memcached`:
+php_memcached_package: php5-memcached
+
+# If you install `xhprof`:
+xhprof_download_url: https://github.com/phacility/xhprof/archive/master.tar.gz
+xhprof_download_folder_name: xhprof-master
+
+vagrant_synced_folders:
+  # The first synced folder will be used for the default Drupal installation, if
+  # any of the build_* settings are 'true'. By default the folder is set to
+  # the drupal-vm folder.
+  - local_path: /opt/drupalvm/sites/mastervm
+    destination: /var/www/mastervm
+    id: mastervm
+    type: nfs
+    create: true
+
+  - local_path: /opt/drupalvm/sites/energy
+    destination: /var/www/energy
+    files: /docroot/sites/development/files
+    id: doe
+    type: nfs
+    create: true
+
+build_makefile: false
+build_composer: false
+build_composer_project: false
+
+# Required Drupal settings.
+drupal_composer_install_dir: "/var/www/drupalvm/drupal"
+drupal_core_path: "{{ drupal_composer_install_dir }}/web"
+drupal_major_version: 7
+
+
+installed_extras:
+  - adminer
+  # - blackfire
+  # - drupalconsole
+  # - mailhog
+  # - memcached
+  # - newrelic
+  # - nodejs
+  # - pimpmylog
+  # - redis
+  # - ruby
+  # - selenium
+  # - solr
+  # - varnish
+  - xdebug
+  # - xhprof
+
+# Add any extra apt or yum packages you would like installed.
+extra_packages:
+  - sqlite
+  - unzip
+
+drush_version: "7.2.0"
+drush_keep_updated: false
+
+# XDebug configuration. XDebug is disabled by default for better performance.
+php_xdebug_default_enable: 0
+php_xdebug_coverage_enable: 0
+php_xdebug_cli_enable: 1
+php_xdebug_remote_enable: 1
+php_xdebug_remote_connect_back: 1
+php_xdebug_remote_autostart: 1
+php_xdebug_remote_port: 9001
+
+# Use PHPSTORM for PHPStorm, sublime.xdebug for Sublime Text.
+php_xdebug_idekey: PHPSTORM
+php_xdebug_max_nesting_level: 256
+
+# Solr Configuration (if enabled above).
+solr_version: "5.5.1"
+solr_xms: "64M"
+solr_xmx: "128M"
+
+# Selenium configuration.
+selenium_version: 2.46.0
+
+# Other configuration.
+dashboard_install_dir: /var/www/dashboard
+known_hosts_path: ~/.ssh/known_hosts
+#ssh_home: "{{ drupal_core_path }}"
+
+firewall_allowed_tcp_ports:
+  - "22"
+  - "25"
+  - "80"
+  - "81"
+  - "443"
+  - "4444"
+  - "8025"
+  - "8080"
+  - "8181"
+  - "8182"
+  - "8183"
+  - "8184"
+  - "8443"
+  - "8983"
+  - "2990"
+  - "8095"
