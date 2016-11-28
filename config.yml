@@ -124,15 +124,15 @@ installed_extras:
   # - blackfire
   # - drupalconsole
   # - mailhog
-  - memcached
+  # - memcached
   # - newrelic
-  # - nodejs
+  - nodejs
   # - pimpmylog
-  - redis
-  # - ruby
+  # - redis
+  - ruby
   # - selenium
-  - solr
-  - varnish
+  # - solr
+  # - varnish
   - xdebug
   # - xhprof
 
@@ -142,8 +142,9 @@ extra_packages:
 extra_security_enabled: false
 
 drush_version: "7.2.0"
+drush_keep_updated: false
 
-php_version: "5.6.9"
+php_version: "5.6"
 php_memory_limit: "384M"
 php_max_execution_time: 90
 
@@ -220,7 +221,6 @@ php_packages:
   - php5-gd
   - php5-sqlite
   - php-pear
-  - php5-memached
   - libpcre3-dev
 php_conf_paths:
   - /etc/php5/fpm
