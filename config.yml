@@ -1,0 +1,247 @@
+---
+vagrant_box: geerlingguy/ubuntu1404
+vagrant_hostname: mastervm.dev
+vagrant_machine_name: mastervm
+
+# For adminer.
+mysql_root_password: root
+
+vagrant_ip: 1.3.3.7
+vagrant_host_ip: 1.3.3.1
+
+vagrant_home: /home/vagrant
+
+vagrant_memory: 4096
+vagrant_cpus: 4
+
+drupalvm_webserver: nginx
+
+# Nginx settings
+fastcgi_read_timeout: 600
+
+# PHP Configuration. Currently-supported versions: 5.6, 7.0.
+# To use 5.6, see: http://docs.drupalvm.com/en/latest/other/php-56/
+php_version: "5.6"
+php_memory_limit: "2048M"
+php_max_execution_time: "90"
+php_install_recommends: no
+php_packages:
+  - php5.6
+  - php5.6-apcu
+  - php5.6-mcrypt
+  - php5.6-cli
+  - php5.6-common
+  - php5.6-curl
+  - php5.6-dev
+  - php5.6-fpm
+  - php5.6-gd
+  - php5.6-sqlite3
+  - php5.6-xml
+  - php5.6-mbstring
+  - libpcre3-dev
+php_conf_paths:
+  - /etc/php/5.6/fpm
+  - /etc/php/5.6/apache2
+  - /etc/php/5.6/cli
+php_extension_conf_paths:
+  - /etc/php/5.6/fpm/conf.d
+  - /etc/php/5.6/apache2/conf.d
+  - /etc/php/5.6/cli/conf.d
+php_fpm_daemon: php5.6-fpm
+php_fpm_conf_path: "/etc/php/5.6/fpm"
+php_fpm_pool_conf_path: "/etc/php/5.6/fpm/pool.d/www.conf"
+php_mysql_package: php5.6-mysql
+
+php_enable_apc: false
+
+# If you install `redis`:
+php_redis_package: php5-redis
+
+# If you install `memcached`:
+php_memcached_package: php5-memcached
+
+# If you install `xhprof`:
+xhprof_download_url: https://github.com/phacility/xhprof/archive/master.tar.gz
+xhprof_download_folder_name: xhprof-master
+
+vagrant_synced_folders:
+  # The first synced folder will be used for the default Drupal installation, if
+  # any of the build_* settings are 'true'. By default the folder is set to
+  # the drupal-vm folder.
+#  - local_path: /opt/drupalvm/sites/mastervm
+#    destination: /var/www/mastervm
+#    id: mastervm
+#    type: nfs
+#    create: true
+
+  - local_path: /opt/drupalvm/sites/d8
+    destination: /var/www/d8
+    files: /public/sites/default/files
+    id: d8
+    type: nfs
+    create: true
+
+  - local_path: /opt/drupalvm/sites/d7
+    destination: /var/www/d7
+    files: /public/sites/default/files
+    id: d7
+    type: nfs
+    create: true
+
+  - local_path: /opt/drupalvm/sites/oa
+    destination: /var/www/oa
+    files: /src/sites/default/files
+    id: oa
+    type: nfs
+    create: true
+
+  - local_path: /opt/drupalvm/sites/bassmaster
+    destination: /var/www/bassmaster
+    #files: /build/html/sites/default/files
+    files: /src/sites/default/files
+    id: bassmaster
+    type: nfs
+    create: true
+
+  - local_path: /opt/drupalvm/sites/atmos
+    destination: /var/www/atmos
+    #files: /build/html/sites/default/files
+    files: /src/sites/default/files
+    id: atmos
+    type: nfs
+    create: true
+
+# Don't try to install a site.
+install_site: false
+build_makefile: false
+build_composer: false
+build_composer_project: false
+
+# Required Drupal settings.
+drupal_composer_install_dir: "/var/www/drupalvm/drupal"
+drupal_core_path: "{{ drupal_composer_install_dir }}/web"
+drupal_major_version: 7
+
+nginx_hosts:
+
+  - server_name: "d8.dev"
+    root: "/var/www/d8/public"
+    is_php: true
+
+  - server_name: "d7.dev"
+    root: "/var/www/d7/public"
+    is_php: true
+
+  - server_name: "oa.dev"
+    root: "/var/www/oa/public"
+    is_php: true
+
+  - server_name: "bassmaster.dev"
+    root: "/var/www/bassmaster/build/html"
+    is_php: true
+
+  - server_name: "atmos.dev"
+    root: "/var/www/atmos/build/html"
+    is_php: true
+
+  - server_name: "adminer.{{ vagrant_hostname }}"
+    root: "{{ adminer_install_dir }}"
+    is_php: true
+
+  - server_name: "xhprof.{{ vagrant_hostname }}"
+    root: "{{ php_xhprof_html_dir }}"
+    is_php: true
+
+  - server_name: "pimpmylog.{{ vagrant_hostname }}"
+    root: "{{ pimpmylog_install_dir }}"
+    is_php: true
+
+  - server_name: "{{ vagrant_ip }} dashboard.{{ vagrant_hostname }}"
+    root: "{{ dashboard_install_dir }}"
+
+installed_extras:
+  - adminer
+  # - blackfire
+  # - drupalconsole
+#  - mailhog
+  - memcached
+  # - newrelic
+  # - nodejs
+#  - pimpmylog
+  # - redis
+  - ruby
+  # - selenium
+  - solr
+  # - varnish
+  - xdebug
+  # - xhprof
+
+# Add any extra apt or yum packages you would like installed.
+extra_packages:
+  - sqlite
+  - unzip
+
+drush_version: "7.2.0"
+drush_keep_updated: false
+
+# XDebug configuration. XDebug is disabled by default for better performance.
+php_xdebug_default_enable: 0
+php_xdebug_coverage_enable: 0
+php_xdebug_cli_enable: 1
+php_xdebug_remote_enable: 1
+php_xdebug_remote_connect_back: 1
+php_xdebug_remote_autostart: 1
+php_xdebug_remote_port: 9001
+php_xdebug_remote_log: "{{ vagrant_home }}/xdebug.log"
+
+# Use PHPSTORM for PHPStorm, sublime.xdebug for Sublime Text.
+php_xdebug_idekey: PHPSTORM
+php_xdebug_max_nesting_level: 256
+
+# Solr Configuration (if enabled above).
+solr_version: "5.5.1"
+solr_xms: "64M"
+solr_xmx: "128M"
+
+# Node JS -- DON'T INSTALL VIA THIS CONFIG FILE. INSTEAD USE NVM.
+nodejs_version: "4.x"
+nodejs_npm_global_packages:
+  - grunt-cli
+  - grunt-scss-lint
+
+# Selenium configuration.
+selenium_version: 2.46.0
+
+# Other configuration.
+dashboard_install_dir: /var/www/dashboard
+known_hosts_path: ~/.ssh/known_hosts
+#ssh_home: "{{ drupal_core_path }}"
+
+firewall_allowed_tcp_ports:
+  - "22"
+  - "25"
+  - "80"
+  - "81"
+  - "443"
+  - "4444"
+  - "8025"
+  - "8080"
+  - "8181"
+  - "8182"
+  - "8183"
+  - "8184"
+  - "8443"
+  - "8983"
+  - "2990"
+  - "8095"
+
+post_provision_scripts:
+  - "../post-install/configure-solr.sh"
+
+#  - ../post-install/extras.sh
+#  - ../post-install/grunt.sh
+#  - ../post-install/scss-lint.sh
+
+
+## Extra machines
+additional_machines:

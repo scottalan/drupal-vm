@@ -1,0 +1,49 @@
+# Vagrant v1.1+
+#config.vm.synced_folder "/opt/drupalvm/sites/bassmaster/build/html/sites/default/files", "/var/www/bassmaster/build/html/sites/default/files", id: "bassmaster-files",
+#  owner: "vagrant",
+#  group: "www-data",
+#  mount_options: ["dmode=775,fmode=664"]
+
+## Extra machines
+
+config.vm.provision "shell", inline: "echo Configuring additional machines..."
+
+#config.vm.define "crowd" do |crowd|
+#  crowd.vm.box = "apache"
+#end
+#
+#config.vm.define "db" do |db|
+#  db.vm.box = "mysql"
+#end
+
+vconfig['vagrant_synced_folders'].each do |synced_folder|
+  case synced_folder['type']
+  when "nfs"
+    guest_path = synced_folder['destination']
+    host_path = File.expand_path(synced_folder['local_path'])
+   # config.vm.synced_folders[guest_path][:guestpath] = "/var/nfs#{host_path}"
+    config.bindfs.bind_folder "/var/nfs#{host_path}", guest_path,
+      perms: 'u=rwX:g=rwX',
+      o: 'nonempty'
+    config.nfs.map_uid = Process.uid
+    config.nfs.map_gid = Process.gid
+  end
+end
+
+# Set 'www-data' as group on files directory.
+vconfig['vagrant_synced_folders'].each do |synced_folder|
+  if synced_folder.include?('files')
+    guest_files_dir = synced_folder['destination'] + synced_folder['files']
+    host_files_dir = synced_folder['local_path'] + synced_folder['files']
+    options = {
+      u: 'www-data',
+      g: 'www-data',
+      #perms: 'u=rwX:g=rwX:o=rwX',
+      perms: 'u=rwX:g=rwX:o=rw',
+      o: 'nonempty'
+    }
+    config.bindfs.bind_folder "/var/nfs#{host_files_dir}", guest_files_dir, options
+    config.nfs.map_uid = Process.uid
+    config.nfs.map_gid = Process.gid
+  end
+end
